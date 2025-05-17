@@ -1,178 +1,156 @@
-‎# DataAnalytics-Assessment
-‎
-‎This repository contains comprehensive solutions to the **SQL Proficiency Assessment**. Each SQL script addresses a practical business question involving relational databases. This README provides deep-dive explanations, query logic, formula breakdowns, detailed output tables, use-case scenarios, and problem-solving documentation to demonstrate full SQL proficiency.
-‎
-‎Prepared by: **JABS**
-‎Date: **May 17, 2025**
-‎Time Zone: **Africa/Lagos**
-‎
-‎---
-‎
-‎## Repository Structure
-‎
-‎| File                | Question                                    |
-‎| ------------------- | ------------------------------------------- |
-‎| `Assessment_Q1.sql` | High-Value Customers with Multiple Products |
-‎| `Assessment_Q2.sql` | Transaction Frequency Analysis              |
-‎| `Assessment_Q3.sql` | Account Inactivity Alert                    |
-‎| `Assessment_Q4.sql` | Customer Lifetime Value (CLV) Estimation    |
-‎
-‎---
-‎
-‎## General Assumptions
-‎
-‎1. **Currency Format** – All monetary values are stored in **kobo** (₦ × 100). Queries convert these to **naira** by dividing by 100.
-‎2. **Timestamps** – Fields like `created_at` are used to calculate transaction dates and tenure.
-‎3. **Active Accounts** – All listed accounts are assumed active unless otherwise stated.
-‎4. **Plan Type Flags** –
-‎
-‎   * `is_regular_savings = 1` identifies savings plans.
-‎   * `is_a_fund = 1` identifies investment plans.
-‎5. **Data Cleaning** – NULL handling and formatting are considered in the queries to ensure consistent and readable outputs.
-‎
-‎---
-‎
-‎## Per-Question Explanations & Output Formats
-‎
-‎### 1. High-Value Customers with Multiple Products
-‎
-‎**Objective**: Identify customers who hold both at least one **funded savings plan** and one **funded investment plan**. Rank by **total deposits**.
-‎
-‎**Query Logic & Explanation**:
-‎
-‎* Use joins between `users_customuser`, `savings_savingsaccount`, and `plans_plan`.
-‎* Filter `is_regular_savings = 1` (for savings) and `is_a_fund = 1` (for investment).
-‎* Use `GROUP BY owner_id` to aggregate counts.
-‎* Use `COUNT(DISTINCT plan_id)` and `SUM(confirmed_amount) / 100` for accuracy.
-‎* Use `HAVING` clause to restrict results to customers with both products.
-‎* Sort by `total_deposits DESC`.
-‎
-‎**Formula**:
-‎
-‎```sql
-‎SUM(savings.confirmed_amount) / 100 AS total_deposits
-‎```
-‎
-‎**Display Table Example**:
-‎
-‎| owner\_id | name     | savings\_count | investment\_count | total\_deposits |
-‎| --------- | -------- | -------------- | ----------------- | --------------- |
-‎| 1001      | John Doe | 2              | 1                 | 15000.00        |
-‎| 1003      | Jane Ali | 3              | 2                 | 13250.50        |
-‎
-‎---
-‎
-‎### 2. Transaction Frequency Analysis
-‎
-‎**Objective**: Group customers into frequency categories based on the **average number of transactions per month**.
-‎
-‎**Query Logic & Explanation**:
-‎
-‎* Use `DATE_TRUNC('month', created_at)` to group monthly.
-‎* Count transactions per customer-month.
-‎* Calculate the average using `AVG(transaction_count)`.
-‎* Categorize frequency using `CASE`:
-‎
-‎  * High Frequency: ≥10 tx/month
-‎  * Medium Frequency: 3–9 tx/month
-‎  * Low Frequency: ≤2 tx/month
-‎
-‎**Formula**:
-‎
-‎```sql
-‎CASE
-‎  WHEN avg_tx_per_month >= 10 THEN 'High Frequency'
-‎  WHEN avg_tx_per_month BETWEEN 3 AND 9 THEN 'Medium Frequency'
-‎  ELSE 'Low Frequency'
-‎END
-‎```
-‎
-‎**Display Table Example**:
-‎
-‎| frequency\_category | customer\_count | avg\_transactions\_per\_month |
-‎| ------------------- | --------------- | ----------------------------- |
-‎| High Frequency      | 250             | 15.2                          |
-‎| Medium Frequency    | 1200            | 5.5                           |
-‎| Low Frequency       | 600             | 1.9                           |
-‎
-‎---
-‎
-‎### 3. Account Inactivity Alert
-‎
-‎**Objective**: Identify accounts (savings or investment) that have had **no inflow transactions in the past 365 days**.
-‎
-‎**Query Logic & Explanation**:
-‎
-‎* Use `MAX(created_at)` to determine latest transaction date.
-‎* Calculate days since last transaction using `CURRENT_DATE - last_transaction_date`.
-‎* Use `HAVING inactivity_days > 365`.
-‎* Join customer data for identification.
-‎* Tag `type` as either `'Savings'` or `'Investment'` for output clarity.
-‎
-‎**Formula**:
-‎
-‎```sql
-‎CURRENT_DATE - MAX(created_at) AS inactivity_days
-‎```
-‎
-‎**Display Table Example**:
-‎
-‎| plan\_id | owner\_id | type       | last\_transaction\_date | inactivity\_days |
-‎| -------- | --------- | ---------- | ----------------------- | ---------------- |
-‎| 1001     | 305       | Savings    | 2023-08-10              | 400              |
-‎| 1010     | 450       | Investment | 2023-01-12              | 480              |
-‎
-‎---
-‎
-‎### 4. Customer Lifetime Value (CLV) Estimation
-‎
-‎**Objective**: Estimate the **Customer Lifetime Value (CLV)** using account tenure and transaction profit.
-‎
-‎**Query Logic & Explanation**:
-‎
-‎* Calculate **tenure** in months: `DATE_PART('month', AGE(CURRENT_DATE, date_joined))`
-‎* Sum of **total transactions** and inflows per customer.
-‎* Calculate **profit per transaction** = `confirmed_amount * 0.001`
-‎* Derive **CLV** using:
-‎
-‎```sql
-‎(total_transactions / tenure_months) * 12 * avg_profit_per_transaction
-‎```
-‎
-‎* CLV gives projected 12-month value based on behavior.
-‎
-‎**Display Table Example**:
-‎
-‎| customer\_id | name     | tenure\_months | total\_transactions | estimated\_clv |
-‎| ------------ | -------- | -------------- | ------------------- | -------------- |
-‎| 1001         | John Doe | 24             | 120                 | 600.00         |
-‎| 1002         | Grace O. | 36             | 90                  | 300.00         |
-‎
-‎---
-‎
-‎## Challenges & Resolutions
-‎
-‎| Challenge                                                 | Resolution                                                                                                        |
-‎| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-‎| **Incomplete Schema** – Missing exact column types/names. | Used inferred schema structure with conventional fields like `created_at`, `confirmed_amount`, and `date_joined`. |
-‎| **Currency Denomination**                                 | Consistently normalized kobo to naira using `/ 100` and documented assumption.                                    |
-‎| **Categorization Logic**                                  | Used robust `CASE` logic to prevent misclassification of frequency.                                               |
-‎| **Plan Type Confusion**                                   | Clarified by using flags `is_regular_savings` and `is_a_fund`.                                                    |
-‎| **Inactivity Overlap**                                    | Used UNION and explicit type fields to handle both plan types uniformly.                                          |
-‎
-‎---
-‎
-‎## Additional Notes
-‎
-‎* Queries are ANSI-SQL compliant.
-‎* Scripts are fully independent and commented.
-‎* Output formats are clearly structured for business reporting.
-‎* Each query handles real-world nuances like NULLs, data formats, and monetary units.
-‎
-‎---
-‎
-‎**Prepared and submitted by:**
-‎**Name:** JABS
-‎**Date:** May 17, 2025
-‎**Location:** Africa/Lagos
-‎
+# DataAnalytics‑Assessment
+
+This repository contains **fully‑documented solutions** to the SQL Proficiency Assessment. Each script answers a realistic business question, while this README delivers deep‑dive explanations, query logic, formula breakdowns, sample outputs, use‑case context, and troubleshooting notes—demonstrating complete SQL proficiency.
+
+> **Prepared by :** **JABS**  |  **Date :** 17 May 2025  |  **Time Zone :** Africa/Lagos
+
+---
+
+## Repository Structure
+
+| File                | Question                                    |
+| ------------------- | ------------------------------------------- |
+| `Assessment_Q1.sql` | High‑Value Customers with Multiple Products |
+| `Assessment_Q2.sql` | Transaction Frequency Analysis              |
+| `Assessment_Q3.sql` | Account Inactivity Alert                    |
+| `Assessment_Q4.sql` | Customer Lifetime Value (CLV) Estimation    |
+
+---
+
+## General Assumptions
+
+1. **Currency** — All monetary fields are stored in **kobo** (₦ × 100). Queries divide by 100 to present values in **naira**.
+2. **Timestamps** — Columns such as `created_at` (transactions) and `date_joined` (users) are available for date math.
+3. **Active Accounts** — Every account returned is assumed active unless explicitly filtered out.
+4. **Plan Flags**
+   • `is_regular_savings = 1` → savings plans
+   • `is_a_fund = 1` → investment plans
+5. **Data Hygiene** — Queries coalesce `NULL`s and format numbers for consistent, human‑readable output.
+
+---
+
+## Per‑Question Explanations & Sample Outputs
+
+### 1 High‑Value Customers with Multiple Products
+
+**Objective** : list customers who hold **both** a funded savings plan **and** a funded investment plan, ranked by total deposits.
+
+**Query Highlights**
+
+* Join `users_customuser`, `savings_savingsaccount`, and `plans_plan`.
+* Filter rows where `is_regular_savings = 1` **and** `is_a_fund = 1`.
+* Aggregate per customer with `GROUP BY owner_id`.
+* Compute:
+  `COUNT(DISTINCT savings_id)` **and** `COUNT(DISTINCT investment_id)`
+  `SUM(confirmed_amount)/100` → `total_deposits` (₦).
+* `HAVING` ensures at least one of each product; sorted `DESC` by deposits.
+
+```sql
+-- key formula
+SUM(savings.confirmed_amount) / 100 AS total_deposits
+```
+
+| owner\_id | name     | savings\_count | investment\_count | total\_deposits |
+| --------: | -------- | -------------: | ----------------: | --------------: |
+|      1001 | John Doe |              2 |                 1 |       15 000.00 |
+|      1003 | Jane Ali |              3 |                 2 |       13 250.50 |
+
+---
+
+### 2 Transaction Frequency Analysis
+
+**Objective** : segment customers by **average monthly transaction count**.
+
+**Logic**
+
+1. `DATE_TRUNC('month', created_at)` → month bucket.
+2. Count monthly tx per customer: `COUNT(*)`.
+3. Average those counts: `AVG(tx_count)`.
+4. Categorize via `CASE`:
+
+```sql
+CASE
+  WHEN avg_tx_per_month >= 10 THEN 'High Frequency'
+  WHEN avg_tx_per_month BETWEEN 3 AND 9 THEN 'Medium Frequency'
+  ELSE 'Low Frequency'
+END AS frequency_category
+```
+
+| frequency\_category | customer\_count | avg\_transactions\_per\_month |
+| ------------------- | --------------: | ----------------------------: |
+| High Frequency      |             250 |                          15.2 |
+| Medium Frequency    |           1 200 |                           5.5 |
+| Low Frequency       |             600 |                           1.9 |
+
+---
+
+### 3 Account Inactivity Alert
+
+**Objective** : surface active accounts (savings or investment) with **no inflow in the last 365 days**.
+
+**Key Steps**
+
+* For each account, find `MAX(created_at)` → `last_transaction_date`.
+* `CURRENT_DATE - last_transaction_date` → `inactivity_days`.
+* `HAVING inactivity_days > 365` filters dormant accounts.
+
+```sql
+CURRENT_DATE - MAX(created_at) AS inactivity_days
+```
+
+| plan\_id | owner\_id | type       | last\_transaction\_date | inactivity\_days |
+| -------: | --------: | ---------- | ----------------------- | ---------------: |
+|     1001 |       305 | Savings    | 2023‑08‑10              |              400 |
+|     1010 |       450 | Investment | 2023‑01‑12              |              480 |
+
+---
+
+### 4 Customer Lifetime Value (CLV) Estimation
+
+**Objective** : estimate **CLV** using tenure and a profit rate of **0.1 %** per transaction.
+
+**Workflow**
+
+1. Tenure (months):
+
+   ```sql
+   DATE_PART('month', AGE(CURRENT_DATE, date_joined)) AS tenure_months
+   ```
+2. Profit per tx: `confirmed_amount × 0.001`.
+3. CLV formula:
+
+   ```sql
+   (total_transactions / tenure_months) * 12 * avg_profit_per_transaction AS estimated_clv
+   ```
+
+| customer\_id | name     | tenure\_months | total\_transactions | estimated\_clv |
+| -----------: | -------- | -------------: | ------------------: | -------------: |
+|         1001 | John Doe |             24 |                 120 |         600.00 |
+|         1002 | Grace O. |             36 |                  90 |         300.00 |
+
+---
+
+## Challenges & Resolutions
+
+| Challenge                                                    | Resolution                                                                                                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| *Incomplete Schema* — column names/types not fully specified | Assumed conventional fields (`created_at`, `confirmed_amount`, `date_joined`) and explained assumptions in code comments. |
+| *Currency in Kobo* — risk of misreporting                    | Standardised all value outputs by dividing by 100 and documenting the conversion.                                         |
+| *Frequency Edge Cases*                                       | Used inclusive CASE ranges to avoid off‑by‑one misclassification.                                                         |
+| *Plan Type Ambiguity*                                        | Utilised explicit boolean flags `is_regular_savings`, `is_a_fund` to separate savings vs. investment.                     |
+| *Overlapping Inactivity*                                     | Combined savings & investment via `UNION ALL`, tagging each row with a `type` field.                                      |
+
+---
+
+## Additional Notes
+
+* Queries follow ANSI‑SQL; minor tweaks adapt them to PostgreSQL/MySQL/SQLite.
+* Each `.sql` file is self‑contained, idempotent, and heavily commented.
+* Output formats align with stakeholder reporting needs.
+* NULL handling, date arithmetic, and currency precision are explicitly managed.
+
+---
+
+**Prepared & submitted by**: **JABS**
+**Date**: 17 May 2025
+**Location**: Africa/Lagos
