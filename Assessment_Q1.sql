@@ -1,44 +1,22 @@
-```sql
-‎/*
-‎   Question 1 – High‑Value Customers with Multiple Products
-‎   -------------------------------------------------------
-‎   • Identify customers who have **at least one funded savings plan** (is_regular_sa = 1)
-‎     and **at least one funded investment plan** (is_a_fund = 1).
-‎   • Display the number of each product type per customer and the customer’s
-‎     **total deposits** across all savings transactions.
-‎   • Sort the list by total deposits, highest first.
-‎   NOTE:  All monetary amounts are stored in **kobo**; we divide by 100 to show naira.
-‎*/
-‎WITH savings_plans AS (
-‎    SELECT owner_id,
-‎           COUNT(*)                AS savings_count
-‎    FROM   plans_plan
-‎    WHERE  is_regular_sa = 1
-‎      AND  confirmed_amount > 0
-‎    GROUP  BY owner_id
-‎),
-‎investment_plans AS (
-‎    SELECT owner_id,
-‎           COUNT(*)                AS investment_count
-‎    FROM   plans_plan
-‎    WHERE  is_a_fund = 1
-‎      AND  confirmed_amount > 0
-‎    GROUP  BY owner_id
-‎),
-‎total_deposits AS (
-‎    SELECT owner_id,
-‎           SUM(confirmed_amount) / 100.0  AS total_deposits -- in naira
-‎    FROM   savings_savingsaccount
-‎    GROUP  BY owner_id
-‎)
-‎SELECT   u.id                                   AS owner_id,
-‎         CONCAT(u.first_name, ' ', u.last_name) AS name,
-‎         s.savings_count,
-‎         i.investment_count,
-‎         COALESCE(d.total_deposits, 0)          AS total_deposits
-‎FROM     users_customuser   u
-‎JOIN     savings_plans      s  ON s.owner_id = u.id
-‎JOIN     investment_plans   i  ON i.owner_id = u.id
-‎LEFT JOIN total_deposits    d  ON d.owner_id = u.id
-‎ORDER BY total_deposits DESC;
-‎```
+-- Assessment_Q1.sql
+-- Question: High-Value Customers with Multiple Products
+-- Objective: Identify customers with both a funded savings plan and an investment plan, sorted by total deposits
+-- Author: JABS
+
+-- Assumptions:
+-- 1. Savings and investment plans are identified using is_regular_savings and is_a_fund respectively.
+-- 2. confirmed_amount is in kobo and needs conversion to naira.
+-- 3. owner_id links the plans to users.
+
+SELECT 
+    u.id AS owner_id,
+    CONCAT(u.first_name, ' ', u.last_name) AS name,
+    COUNT(DISTINCT s.id) AS savings_count,
+    COUNT(DISTINCT p.id) AS investment_count,
+    ROUND(SUM(COALESCE(s.confirmed_amount, 0) + COALESCE(p.confirmed_amount, 0)) / 100.0, 2) AS total_deposits
+FROM users_customuser u
+LEFT JOIN savings_savingsaccount s ON s.owner_id = u.id AND s.is_regular_savings = 1 AND s.confirmed_amount > 0
+LEFT JOIN plans_plan p ON p.owner_id = u.id AND p.is_a_fund = 1 AND p.confirmed_amount > 0
+GROUP BY u.id, u.first_name, u.last_name
+HAVING COUNT(DISTINCT s.id) > 0 AND COUNT(DISTINCT p.id) > 0
+ORDER BY total_deposits DESC;
