@@ -1,26 +1,42 @@
 # DataAnalytics‑Assessment
 
-This repository contains **fully‑documented solutions** to the SQL Proficiency Assessment. Each script answers a realistic business question, while this README delivers deep‑dive explanations, query logic, formula breakdowns, sample outputs, use‑case context, and troubleshooting notes—demonstrating complete SQL proficiency.
+This repository contains **fully‑documented solutions** to the SQL Proficiency Assessment. Each script solves a realistic business question, while this README provides deep‑dive explanations, query logic, formula breakdowns, sample outputs, use‑case context, and troubleshooting notes—demonstrating complete SQL proficiency.
 
 > **Prepared by :** **JABS**  |  **Date :** 17 May 2025  |  **Time Zone :** Africa/Lagos
 
 ---
 
+## 📚 Table of Contents
+
+* [Repository Structure](#repository-structure)
+* [General Assumptions](#general-assumptions)
+* [Per‑Question Explanations & Sample Outputs](#per‑question-explanations--sample-outputs)
+
+  * [1 – High‑Value Customers with Multiple Products](#1-high‑value-customers-with-multiple-products)
+  * [2 – Transaction Frequency Analysis](#2-transaction-frequency-analysis)
+  * [3 – Account Inactivity Alert](#3-account-inactivity-alert)
+  * [4 – Customer Lifetime Value (CLV) Estimation](#4-customer-lifetime-value-clv-estimation)
+* [Challenges & Resolutions](#challenges--resolutions)
+* [Additional Notes](#additional-notes)
+* [Contributing & Feedback](#contributing--feedback)
+
+---
+
 ## Repository Structure
 
-| File                | Question                                    |
-| ------------------- | ------------------------------------------- |
-| `Assessment_Q1.sql` | High‑Value Customers with Multiple Products |
-| `Assessment_Q2.sql` | Transaction Frequency Analysis              |
-| `Assessment_Q3.sql` | Account Inactivity Alert                    |
-| `Assessment_Q4.sql` | Customer Lifetime Value (CLV) Estimation    |
+| File                                       | Question                                    |
+| ------------------------------------------ | ------------------------------------------- |
+| [`Assessment_Q1.sql`](./Assessment_Q1.sql) | High‑Value Customers with Multiple Products |
+| [`Assessment_Q2.sql`](./Assessment_Q2.sql) | Transaction Frequency Analysis              |
+| [`Assessment_Q3.sql`](./Assessment_Q3.sql) | Account Inactivity Alert                    |
+| [`Assessment_Q4.sql`](./Assessment_Q4.sql) | Customer Lifetime Value (CLV) Estimation    |
 
 ---
 
 ## General Assumptions
 
 1. **Currency** — All monetary fields are stored in **kobo** (₦ × 100). Queries divide by 100 to present values in **naira**.
-2. **Timestamps** — Columns such as `created_at` (transactions) and `date_joined` (users) are available for date math.
+2. **Timestamps** — Columns such as `created_at` (transactions) and `date_joined` (users) are available for date arithmetic.
 3. **Active Accounts** — Every account returned is assumed active unless explicitly filtered out.
 4. **Plan Flags**
    • `is_regular_savings = 1` → savings plans
@@ -29,9 +45,9 @@ This repository contains **fully‑documented solutions** to the SQL Proficiency
 
 ---
 
-## Per‑Question Explanations & Sample Outputs
+## Per‑Question Explanations & Sample Outputs
 
-### 1 High‑Value Customers with Multiple Products
+### 1 – High‑Value Customers with Multiple Products
 
 **Objective** : list customers who hold **both** a funded savings plan **and** a funded investment plan, ranked by total deposits.
 
@@ -57,7 +73,7 @@ SUM(savings.confirmed_amount) / 100 AS total_deposits
 
 ---
 
-### 2 Transaction Frequency Analysis
+### 2 – Transaction Frequency Analysis
 
 **Objective** : segment customers by **average monthly transaction count**.
 
@@ -66,7 +82,7 @@ SUM(savings.confirmed_amount) / 100 AS total_deposits
 1. `DATE_TRUNC('month', created_at)` → month bucket.
 2. Count monthly tx per customer: `COUNT(*)`.
 3. Average those counts: `AVG(tx_count)`.
-4. Categorize via `CASE`:
+4. Categorize via `CASE`.
 
 ```sql
 CASE
@@ -84,15 +100,9 @@ END AS frequency_category
 
 ---
 
-### 3 Account Inactivity Alert
+### 3 – Account Inactivity Alert
 
 **Objective** : surface active accounts (savings or investment) with **no inflow in the last 365 days**.
-
-**Key Steps**
-
-* For each account, find `MAX(created_at)` → `last_transaction_date`.
-* `CURRENT_DATE - last_transaction_date` → `inactivity_days`.
-* `HAVING inactivity_days > 365` filters dormant accounts.
 
 ```sql
 CURRENT_DATE - MAX(created_at) AS inactivity_days
@@ -105,23 +115,13 @@ CURRENT_DATE - MAX(created_at) AS inactivity_days
 
 ---
 
-### 4 Customer Lifetime Value (CLV) Estimation
+### 4 – Customer Lifetime Value (CLV) Estimation
 
 **Objective** : estimate **CLV** using tenure and a profit rate of **0.1 %** per transaction.
 
-**Workflow**
-
-1. Tenure (months):
-
-   ```sql
-   DATE_PART('month', AGE(CURRENT_DATE, date_joined)) AS tenure_months
-   ```
-2. Profit per tx: `confirmed_amount × 0.001`.
-3. CLV formula:
-
-   ```sql
-   (total_transactions / tenure_months) * 12 * avg_profit_per_transaction AS estimated_clv
-   ```
+```sql
+(total_transactions / tenure_months) * 12 * avg_profit_per_transaction AS estimated_clv
+```
 
 | customer\_id | name     | tenure\_months | total\_transactions | estimated\_clv |
 | -----------: | -------- | -------------: | ------------------: | -------------: |
@@ -130,7 +130,7 @@ CURRENT_DATE - MAX(created_at) AS inactivity_days
 
 ---
 
-## Challenges & Resolutions
+## Challenges & Resolutions
 
 | Challenge                                                    | Resolution                                                                                                                |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
@@ -151,6 +151,17 @@ CURRENT_DATE - MAX(created_at) AS inactivity_days
 
 ---
 
-**Prepared & submitted by**: **JABS**
-**Date**: 17 May 2025
-**Location**: Africa/Lagos
+## Contributing & Feedback
+
+Have an idea, spotted an issue, or want to share feedback? **Open an Issue or pull request!**
+
+1. Click the **Issues** tab or [start a new issue](https://github.com/Jabs081/DataAnalytics-Assessment/issues/new) and describe your suggestion or problem.
+2. Fork the repo, commit your fixes to a feature branch, and open a **Pull Request**—we’ll review ASAP.
+
+> *Maintainer username*: **[@Jabs081](https://github.com/Jabs081)**
+
+---
+
+**Prepared & submitted by** | **JABS**
+**Date** | 17 May 2025
+**Location** | Africa/Lagos
